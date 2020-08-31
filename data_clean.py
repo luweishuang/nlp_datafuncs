@@ -15,7 +15,6 @@ pattern_alpha = re.compile('[%s]' % re.escape(alpha_char))
 trantab = str.maketrans('，。！？【】（）〔〕％＃＠＆１２３４５６７８９０、', ',.!?[]()[]%#@&1234567890,')
 
 
-
 def is_all_chinese1(strs):
     for _char in strs:
         if not '\u4e00' <= _char <= '\u9fa5':
@@ -29,9 +28,18 @@ def is_all_chinese2(strs):
     return False
 
 
+def filter_emoji(desstr,restr=''):
+    try:
+        co = re.compile(u'[\U00010000-\U0010ffff]')
+    except re.error:
+        co = re.compile(u'[\uD800-\uDBFF][\uDC00-\uDFFF]')
+    return co.sub(restr, desstr)
+
+
 def data_clean1(str_in):
-    text_a = str_in.strip().replace(" ", "").replace("alink", "")
-    text_1 = unicodedata.normalize('NFKC', text_a.lower().replace(" ", ""))      # 中文标点转换为英文标点
+    text_a = str_in.strip().replace(" ", "").replace("alink", "").replace("°C", "度")
+    text_b = filter_emoji(text_a, restr='')
+    text_1 = unicodedata.normalize('NFKC', text_b.lower().replace(" ", ""))      # 中文标点转换为英文标点
     text_2 = text_1.translate(trantab)  # 漏网之鱼手动修改对应
     text_3 = re.sub(u"\\(.*?\\)|\\{.*?}|\\[.*?]", "", text_2)   # 去掉小括号(), {}, []里的内容
     text_4 = cn2an.transform(text_3, "an2cn")                   # 阿拉伯数字转中文
@@ -39,12 +47,16 @@ def data_clean1(str_in):
     if not is_all_chinese1(text_5):
         text_6 = pattern_alpha.sub(u'', text_5)
         if not is_all_chinese1(text_6):
-            print(text_5)
+            # print(text_5)
             return ""
     return text_3
 
 
 if __name__ == "__main__":
+    # s = "回家来第一顿餐太巴适了撒"           # "猫儿本❤❤好漂亮的国度"      "🎤唱吧你还我妻子😭😭😭"   回家来第一顿餐太巴适了撒     猫儿本❤❤好漂亮的国度
+    # print(filter_emoji(s, restr=''))
+    # exit()
+
     data_file = "/home/psc/Desktop/code/conv/sentence-transformers/examples/training/quora_duplicate_questions/data/STC.json"
     train_samples = []
     discard_num = 0
@@ -61,6 +73,13 @@ if __name__ == "__main__":
                 else:
                     use_num += 1
     print("discard_num / all_num = %d / %d" % (discard_num, discard_num + use_num))
+
+
+
+
+
+
+
 
 
 '''
